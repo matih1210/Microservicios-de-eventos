@@ -28,6 +28,14 @@ No existe base de datos compartida: cada servicio mantiene su propia persistenci
 
 ---
 
+## 📚 Documentación por Microservicio
+
+- [Auth.md](./Auth.md) → detalles del microservicio de autenticación.
+- [Event.md](./Event.md) → detalles del microservicio de eventos.
+- [EventSignup.md](./EventSignup.md) → detalles del microservicio de inscripciones.
+
+---
+
 ## 🔑 Gestión de Sesiones y JWT
 
 - En el **login**, el servicio Auth:
