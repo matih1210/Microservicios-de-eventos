@@ -87,15 +87,86 @@ No existe base de datos compartida: cada servicio mantiene su propia persistenci
 ## 🚀 Puesta en marcha
 
 1. Clonar el repositorio.  
-2. Configurar variables de entorno:  
-
-```env
-AUTH_BASE_URL=http://localhost:3001
-HTTP_TIMEOUT_MS=2000
-```
+2. Configurar variables de entorno
 3. Levantar los servicios (ejemplo con Docker Compose).
 4. Probar el flujo completo: login → crear evento/inscribirse → logout → token inválido.
 
+## 🔧 Variables de Entorno
+
+Cada microservicio requiere configurar sus propias variables de entorno.  
+Aquí se listan las principales:
+
+---
+
+### 📌 Auth (go-auth)
+
+| Variable       | Descripción                                     | Valor por defecto            |
+|----------------|-------------------------------------------------|------------------------------|
+| `PORT`         | Puerto en el que corre el servicio              | `3001`                       |
+| `MONGO_URI`    | URI de conexión a MongoDB                       | `mongodb://localhost:27017` |
+| `MONGO_DB`     | Nombre de la base de datos                      | `authdb`                     |
+| `JWT_SECRET`   | Clave secreta para firmar los JWT               | `supersecreto`               |
+| `JWT_EXP_MIN`  | Minutos de validez del JWT                      | `60` (ejemplo)               |
+
+---
+
+### 📌 Event (go-event)
+
+| Variable        | Descripción                                         | Valor por defecto            |
+|-----------------|-----------------------------------------------------|------------------------------|
+| `PORT`          | Puerto en el que corre el servicio                  | `3002`                       |
+| `MONGO_URI`     | URI de conexión a MongoDB                           | `mongodb://localhost:27017` |
+| `MONGO_DB`      | Nombre de la base de datos                          | `eventsdb`                   |
+| `JWT_SECRET`    | Clave secreta para verificar JWT                    | `supersecreto`               |
+| `AUTH_BASE_URL` | URL base del microservicio Auth (para introspección)| `http://localhost:3001`      |
+| `HTTP_TIMEOUT_MS` | Timeout en ms para requests HTTP                  | `2000`                       |
+
+---
+
+### 📌 Signup (go-signup)
+
+| Variable        | Descripción                                         | Valor por defecto            |
+|-----------------|-----------------------------------------------------|------------------------------|
+| `PORT`          | Puerto en el que corre el servicio                  | `3003`                       |
+| `MONGO_URI`     | URI de conexión a MongoDB                           | `mongodb://localhost:27017` |
+| `MONGO_DB`      | Nombre de la base de datos                          | `signupdb`                   |
+| `JWT_SECRET`    | Clave secreta para verificar JWT                    | `supersecreto`               |
+| `EVENT_BASE_URL`| URL base del microservicio Event                    | `http://localhost:3002`      |
+| `AUTH_BASE_URL` | URL base del microservicio Auth (para introspección)| `http://localhost:3001`      |
+| `HTTP_TIMEOUT_MS` | Timeout en ms para requests HTTP                  | `2000`                       |
+
+---
+
+### 📂 Ejemplo de `.env`
+
+Se recomienda crear un archivo `.env` en cada microservicio con estas variables, por ejemplo:
+
+#### Auth (`.env`)
+```env
+PORT=3001
+MONGO_URI=mongodb://localhost:27017
+MONGO_DB=authdb
+JWT_SECRET=supersecreto
+JWT_EXP_MIN=60
+```
+#### Event (`.env`)
+```env
+PORT=3002
+MONGO_URI=mongodb://localhost:27017
+MONGO_DB=eventsdb
+JWT_SECRET=supersecreto
+AUTH_BASE_URL=http://localhost:3001
+HTTP_TIMEOUT_MS=2000
+```
+#### Signup (`.env`)
+```env
+PORT=3002
+MONGO_URI=mongodb://localhost:27017
+MONGO_DB=eventsdb
+JWT_SECRET=supersecreto
+AUTH_BASE_URL=http://localhost:3001
+HTTP_TIMEOUT_MS=2000
+```
 ---
 
 Autor: Matías Hansen
