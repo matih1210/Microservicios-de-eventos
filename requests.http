@@ -1,0 +1,178 @@
+@auth = http://localhost:3001
+@event = http://localhost:3002
+@signup = http://localhost:3003
+
+@user1 = mati1210
+@pass1 = secreto123
+
+@user2 = matih1210
+@pass2 = clave123
+
+### AUTH — Crear usuario1 (201 o 400 si ya existe)
+POST {{auth}}/user
+Content-Type: application/json
+
+{
+  "name": "Matias",
+  "username": "{{user1}}",
+  "password": "{{pass1}}"
+}
+
+### AUTH — Login user1
+# @name login_user1
+POST {{auth}}/user/login
+Authorization: Basic bWF0aTEyMTA6c2VjcmV0bzEyMw==
+
+### AUTH — Current user1
+GET http://localhost:3001/user/current
+Authorization: Bearer {{login_user1.response.body.token}}
+
+### --- INTROSPECCIÓN (antes de logout) → 200 { active:true, ... }
+GET http://localhost:3001/token/introspect
+Authorization: Bearer {{login_user1.response.body.token}}
+
+### AUTH — Crear usuario2 (201 o 400 si ya existe)
+POST {{auth}}/user
+Content-Type: application/json
+
+{
+  "name": "Otro",
+  "username": "{{user2}}",
+  "password": "{{pass2}}"
+}
+
+### AUTH — Login user2
+# @name login_user2
+POST {{auth}}/user/login
+Authorization: Basic bWF0aWgxMjEwOmNsYXZlMTIz
+
+### AUTH — Current user2
+GET {{auth}}/user/current
+Authorization: Bearer {{login_user2.response.body.token}}
+
+### EVENT — Crear evento (futuro, user1)
+# @name create_event_user1
+POST {{event}}/event
+Content-Type: application/json
+Authorization: Bearer {{login_user1.response.body.token}}
+
+{
+  "name": "Meetup Go5",
+  "when": 2000000000
+}
+
+### EVENT — Listar abiertos
+GET {{event}}/event
+
+### EVENT — Detalle
+GET {{event}}/event/{{create_event_user1.response.body.id}}
+
+### EVENT — Modificar (feliz)
+PUT {{event}}/event/{{create_event_user1.response.body.id}}
+Content-Type: application/json
+Authorization: Bearer {{login_user1.response.body.token}}
+
+{
+  "id": "{{create_event_user1.response.body.id}}",
+  "name": "Meetup Go v2",
+  "when": 2000003600
+}
+
+### SIGNUP — Crear inscripción (user1)
+# @name signup_user1
+POST {{signup}}/signup
+Content-Type: application/json
+Authorization: Bearer {{login_user1.response.body.token}}
+
+{
+  "eventId": "{{create_event_user1.response.body.id}}"
+}
+
+### SIGNUP — Listar inscriptos
+GET {{signup}}/signup?eventId={{create_event_user1.response.body.id}}
+
+### SIGNUP — Duplicada (user1 ya inscripto) → 400 {}
+POST {{signup}}/signup
+Content-Type: application/json
+Authorization: Bearer {{login_user1.response.body.token}}
+
+{
+  "eventId": "{{create_event_user1.response.body.id}}"
+}
+
+### SIGNUP — Cancelar inscripción como OTRO usuario → 403 {}
+DELETE {{signup}}/signup/{{signup_user1.response.body.id}}
+Authorization: Bearer {{login_user2.response.body.token}}
+
+### SIGNUP — Cancelar inscripción (dueño) → 200
+DELETE {{signup}}/signup/{{signup_user1.response.body.id}}
+Authorization: Bearer {{login_user1.response.body.token}}
+
+### EVENT — Modificar con when pasado → 400 {}
+PUT {{event}}/event/{{create_event_user1.response.body.id}}
+Content-Type: application/json
+Authorization: Bearer {{login_user1.response.body.token}}
+
+{
+  "id": "{{create_event_user1.response.body.id}}",
+  "name": "Meetup Go past",
+  "when": 1000
+}
+
+### EVENT — Modificar con id body ≠ path → 400 {}
+PUT {{event}}/event/{{create_event_user1.response.body.id}}
+Content-Type: application/json
+Authorization: Bearer {{login_user1.response.body.token}}
+
+{
+  "id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+  "name": "Meetup Go mismatch",
+  "when": 2000003600
+}
+
+### EVENT — Modificar como otro usuario → 403 {}
+PUT {{event}}/event/{{create_event_user1.response.body.id}}
+Content-Type: application/json
+Authorization: Bearer {{login_user2.response.body.token}}
+
+{
+  "id": "{{create_event_user1.response.body.id}}",
+  "name": "hack attempt",
+  "when": 2000003600
+}
+
+### --- INTROSPECCIÓN (antes de logout) → 200 { active:true, ... }
+GET {{auth}}/token/introspect
+Authorization: Bearer {{login_user1.response.body.token}}
+
+### AUTH — Logout user1
+POST {{auth}}/user/logout
+Authorization: Bearer {{login_user1.response.body.token}}
+
+### --- INTROSPECCIÓN (después de logout) → 401 {}
+GET {{auth}}/token/introspect
+Authorization: Bearer {{login_user1.response.body.token}}
+
+### EVENT — Probar token invalidado (crear nuevo evento) → 401 {}
+POST {{event}}/event
+Content-Type: application/json
+Authorization: Bearer {{login_user1.response.body.token}}
+
+{
+  "name": "Should fail after logout",
+  "when": 2000007200
+}
+
+### SIGNUP — Probar token invalidado (inscribirse) → 401 {}
+POST {{signup}}/signup
+Content-Type: application/json
+Authorization: Bearer {{login_user1.response.body.token}}
+
+{
+  "eventId": "{{create_event_user1.response.body.id}}"
+}
+
+### EVENT — Cancelar evento (owner, usar token de user1 ANTES de hacer logout si querés probar esto) → 200
+# Si ya hiciste logout arriba, este request debe fallar 401 con ese mismo token.
+DELETE {{event}}/event/{{create_event_user1.response.body.id}}
+Authorization: Bearer {{login_user1.response.body.token}}
