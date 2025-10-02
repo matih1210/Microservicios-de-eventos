@@ -1,5 +1,8 @@
 package handler
 
+// El handler de introspección es lo que permite que otros microservicios (Event, Signup) no confíen solo en validar localmente el JWT, sino que le pregunten a Auth si el token todavía es válido y la sesión sigue viva.
+// Así es como lograste que el logout invalide tokens automáticamente 🚀.
+
 import (
 	"net/http"
 	"strings"
